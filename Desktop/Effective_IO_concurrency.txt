@@ -1,0 +1,46 @@
+The test is done with
+No of rows: 100000000 (100million)
+size: 3.5 GB
+No of columns : 2
+Query : SELECT * FROM tnkloudone10.test WHERE major BETWEEN 10 AND 100 OR minor BETWEEN 800 AND 900;
+CPU usage during test 0-20%
+
+As we expected,  the Execution time is decreased with increase in the IO concurrency in the first call
+
+first call :
+
+IO concurrency  Execution time
+
+0             =  29032ms
+100           =  28098ms
+200           =  26191ms
+300           =  21883ms
+400           =  19820ms
+500           =  12817ms
+600           =  13063ms
+700           =  13473ms
+800           =  9539ms
+900           =  8237ms
+1000          =  8066ms
+
+
+but after the first call the average time taken for execution is increasing with increase in IO concurrency
+
+Average effective concurrency IO test results after first call :
+
+IO concurrency   Avg Time taken for execution
+
+0             =  4450ms-4650ms approx.
+100           =  4700ms-4900ms approx.
+200           =  4750ms-4850ms approx.
+300           =  4800ms-4900ms approx.
+400           =  4850ms-4950ms approx.
+500           =  4800ms-5000ms approx.
+600           =  4800ms-5000ms approx.
+700           =  5000ms-5200ms approx.
+800           =  5200ms-5400ms approx.
+900           =  5400ms-5600ms approx.
+1000          =  5800ms-6000ms approx.
+
+
+

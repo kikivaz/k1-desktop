@@ -1,0 +1,137 @@
+review autovacuum,vacuum of a table:
+
+SELECT relname AS "table", n_tup_ins AS "inserts", n_tup_upd as "updates", n_tup_del as "deletes", n_live_tup as "live_tuples", 
+n_dead_tup as "dead_tuples",last_vacuum, last_autovacuum FROM pg_stat_user_tables where  relname = 'test2';
+===========================================================
+
+populating n num of rows in a table:
+
+FOR i IN 1..1000000 LOOP INSERT INTO test2 (id,col2) VALUES (i, 'test'||i); 
+
+===========================================================
+
+postgresql.conf location:
+
+C:\Program Files\PostgreSQL\13\data
+
+vim C:\Program Files\PostgreSQL\13\data\postgresql.conf == to edit
+
+sudo vim /data/pgdata/postgresql.conf  ===(testn)
+
+============================================================
+
+postgres reload command;
+
+psql -U postgres -c "SELECT pg_reload_conf();"
+
+pg_ctl -D "C:\Program Files\PostgreSQL\13\data" restart  
+
+sudo systemctl restart postgresql-11        ====restart service (testn)
+
+===================================================================
+
+
+select relname,n_tup_ins , n_tup_upd,n_tup_del,n_live_tup,n_dead_tup,last_vacuum,last_autovacuum,last_analyze,last_autoanalyze,vacuum_count,autovacuum_count,analyze_count,autoanalyze_count
+from pg_stat_all_tables where relname='test'; \gx
+
+=========================================================
+
+SELECT datname, usename, pid, current_timestamp - xact_start AS xact_runtime, state, query
+FROM pg_stat_activity 
+WHERE query LIKE '%test%'
+ORDER BY xact_start;
+
+======================================================================
+
+VIEW POSTGRESQL.CONF SETTINGS :=
+
+select name, setting,unit from pg_settings where name like '%autovacuum%';
+
+select name, setting,unit from pg_settings where name like '%effective_io_concurrency%';
+
+============================================================================
+ssh -i C:\Users\VC\Documents\testn_key_kiki.ppk jradhakrishnan@10.23.32.187
+
+
+ssh -i C:\Users\VC\.ssh\id_rsa.pub jradhakrishnan@10.23.32.187
+
+psql -U tnkloudone10 -d testn
+==============================================================================
+
+
+DO
+$$
+BEGIN
+FOR i IN 1..10 LOOP
+EXECUTE 'DROP table if exists tnkloudone10.worker_test'||i;
+END LOOP;
+END;
+$$;
+
+
+DO
+$$
+BEGIN
+FOR i IN 1..10 LOOP
+EXECUTE 'create table tnkloudone10.worker_test'||i ||'(id int primary key,col2 varchar(50))';
+END LOOP;
+END;
+$$;
+
+
+DO 
+$$
+BEGIN
+FOR i IN 1..1000000 LOOP
+INSERT INTO tnkloudone10.worker_test1 (id, col2) VALUES (i, 'test'||i);
+INSERT INTO tnkloudone10.worker_test2 (id, col2) VALUES (i, 'test'||i);
+INSERT INTO tnkloudone10.worker_test3 (id, col2) VALUES (i, 'test'||i);
+INSERT INTO tnkloudone10.worker_test4 (id, col2) VALUES (i, 'test'||i);
+INSERT INTO tnkloudone10.worker_test5 (id, col2) VALUES (i, 'test'||i);
+INSERT INTO tnkloudone10.worker_test6 (id, col2) VALUES (i, 'test'||i);
+INSERT INTO tnkloudone10.worker_test7 (id, col2) VALUES (i, 'test'||i);
+INSERT INTO tnkloudone10.worker_test8 (id, col2) VALUES (i, 'test'||i);
+INSERT INTO tnkloudone10.worker_test9 (id, col2) VALUES (i, 'test'||i);
+INSERT INTO tnkloudone10.worker_test10 (id, col2) VALUES (i, 'test'||i);
+END LOOP;
+END;
+$$;
+
+
+DO
+$$
+BEGIN
+FOR i IN 1..10 LOOP
+EXECUTE 'delete from tnkloudone10.worker_test'||i;
+END LOOP;
+END;
+$$;
+
+\dt
+
+SELECT relname as "table",
+       n_tup_ins as "inserts",
+       n_tup_upd as "updates",
+       n_tup_del as "deletes",
+       n_live_tup as "live_tuples",
+       n_dead_tup as "dead_tuples",
+       last_vacuum, last_autovacuum
+FROM   pg_stat_user_tables 
+where relname like 'worker_test%';
+
+=======================================================================
+DROP TABLE tnkloudone10.test;
+
+CREATE TABLE tnkloudone10.test (major int PRIMARY KEY, minor int);
+
+CREATE INDEX minor_idx ON tnkloudone10.test (major, minor);
+
+INSERT INTO tnkloudone10.test VALUES ( generate_series(0,100000000), random()*1000 );
+
+
+EXPLAIN (ANALYZE,BUFFERS) SELECT * FROM tnkloudone10.test WHERE major BETWEEN 10 AND 100 OR minor BETWEEN 800 AND 900;
+
+
+
+EXPLAIN (ANALYZE,BUFFERS) SELECT * FROM tnkloudone10.test WHERE major BETWEEN 10 AND 100 OR minor BETWEEN 900 AND 1000;
+EXPLAIN (ANALYZE,BUFFERS) SELECT * FROM tnkloudone10.test WHERE major BETWEEN 10 AND 100 OR minor BETWEEN 800 AND 900;

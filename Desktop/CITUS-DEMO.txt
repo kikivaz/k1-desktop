@@ -1,0 +1,98 @@
+=========================================CREATING INFRASTUCTURE FOR CITUS DATA=================================================
+
+CREATE USER kiki WITH SUPERUSER PASSWORD 'kikivaz';
+CREATE DATABASE testdb_k OWNER kiki;
+\c testdb_k kiki
+CREATE EXTENSION citus;
+CREATE SCHEMA citus_schema;
+SET SEARCH_PATH = 'citus_schema';
+
+===================================================ADDING WORKER NODE=======================================================
+
+SELECT * from citus_add_node('10.4.3.5', 5432);
+
+
+================================================VIEWING ACTIVEWORKER NODES=======================================================
+
+SELECT master_get_active_worker_nodes();
+
+
+====================================================DISTRIBUTING TABLE=======================================================
+
+SELECT create_distributed_table('events', 'device_id');
+
+select undistribute_table('events');
+
+SELECT undistribute_table($$public.tablename$$, cascade_via_foreign_keys=>true);   ====>tables that includes foriegn keys
+
+SELECT create_distributed_table('devices', 'device_id', colocate_with := 'events');
+
+======================================================REFERENCE TABLE=======================================================
+
+
+SELECT create_reference_table('device_types');
+
+=======================================================COLUMNAR TABLE========================================================================
+
+CREATE TABLE events_columnar (
+  device_id bigint,
+  event_id bigserial,
+  event_time timestamptz default now(),
+  data jsonb not null
+)
+USING columnar; 
+
+INSERT INTO events_columnar (device_id, data)
+SELECT d, '{"hello":"columnar"}' FROM generate_series(1,1000000) d;
+
+SELECT alter_table_set_access_method('events_columnar', 'heap');
+=======================================================================================================
+
+CREATE TABLE events (
+  device_id bigint,
+  event_id bigserial,
+  event_time timestamptz default now(),
+  data jsonb not null,
+  PRIMARY KEY (device_id, event_id)
+);
+
+INSERT INTO events (device_id, data)
+SELECT s % 100, ('{"measurement":'||random()||'}')::jsonb FROM generate_series(1,1000000) s;
+
+=========================================================================================================
+
+CREATE TABLE devices (
+  device_id bigint primary key,
+  device_name text,
+  device_type_id int
+);
+CREATE INDEX ON devices (device_type_id);
+
+
+INSERT INTO devices (device_id, device_name, device_type_id)
+SELECT s, 'device-'||s, 55 FROM generate_series(0, 99) s;
+
+
+SELECT avg((data->>'measurement')::double precision)
+FROM events JOIN devices USING (device_id)
+WHERE device_type_id = 55;
+
+========================================================================================================
+
+CREATE TABLE device_types (
+  device_type_id int primary key,
+  device_type_name text not null unique
+);
+
+
+SELECT create_reference_table('device_types');
+
+
+INSERT INTO device_types (device_type_id, device_type_name) VALUES (55, 'laptop');
+
+SELECT device_id, event_time, data->>'measurement' AS value, device_name, device_type_name
+FROM events JOIN devices USING (device_id) JOIN device_types USING (device_type_id)
+WHERE device_type_name LIKE 'laptop%' ORDER BY event_time DESC LIMIT 3;
+
+========================================================================================================
+

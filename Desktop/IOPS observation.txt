@@ -1,0 +1,8 @@
+The monitoring was done  
+
+percona to database delay 10-15 seconds
+
+query ran : create table query max write speed 252 mbps      8.33 sec delay down time
+
+query ran : create index query max write speed 450 mbps      
+
